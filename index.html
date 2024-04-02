@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitner Learning App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <h1>Learn English</h1>
+        <div id="question">Loading...</div>
+        <div id="choices" class="choices"></div>
+    </div>
+    <script>
+      const spreadsheetId = "1OCDOM_SjqvTHX0B-_GM_UkFkQb06knX245cXhUP-_Rs";
+const range = "Feuille1!A:C"; // Nous sélectionnons toutes les colonnes A à C
+const apiKey = "AIzaSyDSPjxOnc5uPyijVzybwtz9nL2JnI0Lt5g";
+const questionElement = document.getElementById('question');
+const choicesElement = document.getElementById('choices');
+
+function loadWords() {
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => response.json())
+        .then(data => {
+            const words = data.values;
+            if (words.length > 0) {
+                words.shift(); // Remove the header of the array
+                displayWord(words);
+            }
+        }).catch(error => {
+            console.error('Error fetching data:', error);
+        });
+}
+
+function displayWord(words) {
+    const index = Math.floor(Math.random() * words.length);
+    const [englishWord, firstTranslation, secondTranslation] = words[index];
+
+    questionElement.textContent = `How do you say "${englishWord}" in French?`;
+
+    let choices = [firstTranslation];
+    if (secondTranslation) choices.push(secondTranslation);
+
+    while (choices.length < 3) {
+        const wrongIndex = Math.floor(Math.random() * words.length);
+        const wrongAnswer = words[wrongIndex][1];
+        if (!choices.includes(wrongAnswer) && wrongAnswer !== firstTranslation && wrongAnswer !== secondTranslation) {
+            choices.push(wrongAnswer);
+        }
+    }
+
+    choices = choices.sort(() => Math.random() - 0.5);
+
+    choicesElement.innerHTML = '';
+    choices.forEach(choice => {
+        const button = document.createElement('button');
+        button.textContent = choice;
+        button.classList.add('choice-button');
+        button.onclick = function() { checkAnswer(button, choice, [firstTranslation, secondTranslation].includes(choice)) };
+        choicesElement.appendChild(button);
+    });
+}
+
+function checkAnswer(button, answer, isCorrect) {
+    const allButtons = document.querySelectorAll('.choice-button');
+    allButtons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === answer) {
+            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+        if (!isCorrect && [firstTranslation, secondTranslation].includes(btn.textContent)) {
+            btn.classList.add('correct');
+        }
+    });
+    setTimeout(loadWords, 2000); // Reload new word after a short delay
+}
+
+document.addEventListener('DOMContentLoaded', loadWords);
+
+    </script>
+</body>
+</html>
