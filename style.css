@@ -16,6 +16,7 @@ body, html {
     display: flex; /* Ajouté pour utiliser flexbox */
     flex-direction: column; /* Ajouté pour aligner les enfants de flex verticalement */
     justify-content: center; /* Ajouté pour centrer le contenu verticalement */
+    position: relative; /* Assurez-vous que le parent a une position relative */
 }
 
 .choices button {
@@ -29,10 +30,16 @@ body, html {
 
 .refresh-button {
     padding: 10px 20px;
-    margin-top: 20px;
     font-size: 16px;
     cursor: pointer;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    position: absolute; /* Position absolue par rapport à #app */
+    top: 10px; /* 10px du haut de #app */
+    right: 10px; /* 10px du côté droit de #app */
 }
+
 
 .correct {
     background-color: green;
