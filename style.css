@@ -29,7 +29,7 @@ body, html {
 }
 
 .refresh-button {
-    padding: 10px 20px;
+    padding: 5px 20px;
     font-size: 16px;
     cursor: pointer;
     background-color: #f8f9fa;
