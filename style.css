@@ -34,7 +34,7 @@ body, html {
     cursor: pointer;
     background-color: #f8f9fa;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 40px;
     position: absolute; /* Position absolue par rapport à #app */
     top: 10px; /* 10px du haut de #app */
     right: 10px; /* 10px du côté droit de #app */
