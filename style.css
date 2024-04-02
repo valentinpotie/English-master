@@ -2,12 +2,20 @@ body, html {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
+    box-sizing: border-box; /* Ajouté pour inclure le padding et la bordure dans la largeur totale des éléments */
 }
 
 #app {
     max-width: 600px;
     margin: 20px auto;
+    padding: 0 5%; /* Ajouté pour garantir la marge sur les côtés */
+    box-sizing: border-box; /* Ajouté pour que le padding soit inclus dans la largeur max */
     text-align: center;
+    position: relative; /* Ajouté pour le positionnement du bouton de rafraîchissement */
+    min-height: 100vh; /* Ajouté pour étendre l'app div à toute la hauteur de la fenêtre */
+    display: flex; /* Ajouté pour utiliser flexbox */
+    flex-direction: column; /* Ajouté pour aligner les enfants de flex verticalement */
+    justify-content: center; /* Ajouté pour centrer le contenu verticalement */
 }
 
 .choices button {
@@ -15,6 +23,13 @@ body, html {
     width: 100%;
     padding: 10px;
     margin: 10px 0;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.refresh-button {
+    padding: 10px 20px;
+    margin-top: 20px;
     font-size: 16px;
     cursor: pointer;
 }
