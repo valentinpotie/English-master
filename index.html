@@ -8,83 +8,94 @@
 </head>
 <body>
     <div id="app">
-        <h1>Learn English</h1>
+        <h1>Learn English <span id="streak">🔥 <span id="streak-count">0</span></span></h1>
         <div id="question">Loading...</div>
         <div id="choices" class="choices"></div>
         <button onclick="window.location.reload();" class="refresh-button">Refresh</button>
     </div>
+    <script src="script.js"></script>
+
     <script>
-      const spreadsheetId = "1OCDOM_SjqvTHX0B-_GM_UkFkQb06knX245cXhUP-_Rs";
-      const range = "Feuille1!A:C"; // Nous sélectionnons toutes les colonnes A à C
-      const apiKey = "AIzaSyDSPjxOnc5uPyijVzybwtz9nL2JnI0Lt5g";
-      const questionElement = document.getElementById('question');
-      const choicesElement = document.getElementById('choices');
+ const spreadsheetId = "1OCDOM_SjqvTHX0B-_GM_UkFkQb06knX245cXhUP-_Rs";
+const range = "Feuille1!A:C";
+const apiKey = "AIzaSyDSPjxOnc5uPyijVzybwtz9nL2JnI0Lt5g";
+const questionElement = document.getElementById('question');
+const choicesElement = document.getElementById('choices');
+const streakCountElement = document.getElementById('streak-count');
+let streak = 0; // Initialiser le compteur de streak à 0
 
-      function loadWords() {
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-              .then(response => response.json())
-              .then(data => {
-                  const words = data.values;
-                  if (words.length > 0) {
-                      words.shift(); // Remove the header of the array
-                      displayWord(words);
-                  }
-              }).catch(error => {
-                  console.error('Error fetching data:', error);
-              });
-      }
+function loadWords() {
+    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
+        .then(response => response.json())
+        .then(data => {
+            const words = data.values;
+            if (words.length > 0) {
+                words.shift(); // Remove the header of the array
+                displayWord(words);
+            }
+        }).catch(error => {
+            console.error('Error fetching data:', error);
+        });
+}
 
-      function displayWord(words) {
-          const index = Math.floor(Math.random() * words.length);
-          const [englishWord, firstTranslation, secondTranslation] = words[index];
+function displayWord(words) {
+    const index = Math.floor(Math.random() * words.length);
+    const [englishWord, firstTranslation, secondTranslation] = words[index];
 
-          questionElement.textContent = `How do you say "${englishWord}" in French?`;
+    questionElement.textContent = `How do you say "${englishWord}" in French?`;
 
-          // Select randomly one of the two translations if both exist
-          const correctTranslation = secondTranslation && Math.random() < 0.5 ? secondTranslation : firstTranslation;
+    const correctTranslation = secondTranslation && Math.random() < 0.5 ? secondTranslation : firstTranslation;
 
-          let choices = [correctTranslation];
+    let choices = [correctTranslation];
 
-          // Generate two incorrect answers
-          while (choices.length < 3) {
-              const wrongIndex = Math.floor(Math.random() * words.length);
-              const wrongAnswer = words[wrongIndex][1];
-              // Ensure that the wrong answer is neither the first nor the second translation
-              if (!choices.includes(wrongAnswer) && wrongAnswer !== firstTranslation && wrongAnswer !== secondTranslation) {
-                  choices.push(wrongAnswer);
-              }
-          }
+    while (choices.length < 3) {
+        const wrongIndex = Math.floor(Math.random() * words.length);
+        const wrongAnswer = words[wrongIndex][1];
+        if (!choices.includes(wrongAnswer) && wrongAnswer !== firstTranslation && wrongAnswer !== secondTranslation) {
+            choices.push(wrongAnswer);
+        }
+    }
 
-          // Shuffle the choices
-          choices = choices.sort(() => Math.random() - 0.5);
+    choices = choices.sort(() => Math.random() - 0.5);
 
-          // Display the choices on the page
-          choicesElement.innerHTML = '';
-          choices.forEach(choice => {
-              const button = document.createElement('button');
-              button.textContent = choice;
-              button.classList.add('choice-button');
-              // Pass correctTranslation to the checkAnswer function
-              button.onclick = function() { checkAnswer(button, choice, choice === correctTranslation) };
-              choicesElement.appendChild(button);
-          });
-      }
+    choicesElement.innerHTML = '';
+    choices.forEach(choice => {
+        const button = document.createElement('button');
+        button.textContent = choice;
+        button.classList.add('choice-button');
+        button.onclick = function() { checkAnswer(button, choice, choice === correctTranslation) };
+        choicesElement.appendChild(button);
+    });
+}
 
-      function checkAnswer(button, answer, isCorrect) {
-          const allButtons = document.querySelectorAll('.choice-button');
-          allButtons.forEach(btn => {
-              btn.disabled = true;
-              if (btn.textContent === answer) {
-                  btn.classList.add(isCorrect ? 'correct' : 'incorrect');
-              }
-              if (!isCorrect && [firstTranslation, secondTranslation].includes(btn.textContent)) {
-                  btn.classList.add('correct');
-              }
-          });
-          setTimeout(loadWords, 2000); // Reload new word after a short delay
-      }
+function checkAnswer(button, answer, isCorrect) {
+    const allButtons = document.querySelectorAll('.choice-button');
+    allButtons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === answer) {
+            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+    });
+    if (isCorrect) {
+        increaseStreak(); // Augmenter le streak si la réponse est correcte
+    } else {
+        resetStreak(); // Réinitialiser le streak si la réponse est incorrecte
+    }
+    setTimeout(loadWords, 2000); // Reload new word after a short delay
+}
 
-      document.addEventListener('DOMContentLoaded', loadWords);
+function increaseStreak() {
+    streak++; // Incrémenter le streak
+    streakCountElement.textContent = streak; // Mettre à jour l'affichage
+    streakCountElement.parentElement.style.display = 'inline'; // Afficher l'élément si ce n'est pas déjà fait
+}
+
+function resetStreak() {
+    streak = 0; // Réinitialiser le streak
+    streakCountElement.textContent = streak; // Mettre à jour l'affichage
+}
+
+document.addEventListener('DOMContentLoaded', loadWords);
 
     </script>
 </body>
