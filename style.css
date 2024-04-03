@@ -50,7 +50,7 @@ body, html {
 }
 
 #streak {
-    font-size: 24px; /* Ajustez la taille selon vos préférences */
+    font-size: 18px; /* Ajustez la taille selon vos préférences */
     display: none; /* Cachez le streak par défaut, il s'affichera après une bonne réponse */
     vertical-align: middle;
 }
