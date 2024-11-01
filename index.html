@@ -3,101 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leitner Learning App</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Vocabulary Trainer</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        #app {
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(to right, var(--primary), #60a5fa);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .refresh-button {
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .refresh-button:hover {
+            background: #f1f5f9;
+        }
+
+        .streak {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .streak-count {
+            font-weight: bold;
+            color: #f97316;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .choices {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .choice-button {
+            background: transparent;
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .choice-button:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .choice-button:active {
+            transform: scale(0.98);
+        }
+
+        .choice-button.correct {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        .choice-button.incorrect {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            color: white;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: #22c55e;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
-        <h1>Learn English</h1>
-        <div id="question">Loading...</div>
-        <div id="choices" class="choices"></div>
-        <button onclick="window.location.reload();" class="refresh-button">Refresh</button>
+        <div class="header">
+            <h1 class="title">Vocabulary Trainer</h1>
+            <button onclick="loadWords()" class="refresh-button">↻</button>
+        </div>
 
-        <div id="streak">Can you maintain your streak? 🔥 <span id="streak-count">0</span></div> <!-- Modification ici -->
+        <div class="card">
+            <div class="streak">
+                <span>🔥</span>
+                <span>Streak: <span id="streak-count" class="streak-count">0</span></span>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progress" class="progress-fill"></div>
+            </div>
+
+            <div id="question" class="question">Loading...</div>
+            <div id="choices" class="choices"></div>
+        </div>
     </div>
 
+    <div id="toast" class="toast"></div>
+
     <script>
- const spreadsheetId = "1OCDOM_SjqvTHX0B-_GM_UkFkQb06knX245cXhUP-_Rs";
-const range = "Feuille1!A:C";
-const apiKey = "AIzaSyDSPjxOnc5uPyijVzybwtz9nL2JnI0Lt5g";
-const questionElement = document.getElementById('question');
-const choicesElement = document.getElementById('choices');
-const streakCountElement = document.getElementById('streak-count');
-let streak = 0; // Initialiser le compteur de streak à 0
+        const spreadsheetId = "1OCDOM_SjqvTHX0B-_GM_UkFkQb06knX245cXhUP-_Rs";
+        const range = "Feuille1!A:C";
+        const apiKey = "AIzaSyDSPjxOnc5uPyijVzybwtz9nL2JnI0Lt5g";
+        
+        let streak = 0;
+        let currentWord = null;
 
-function loadWords() {
-    fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`)
-        .then(response => response.json())
-        .then(data => {
-            const words = data.values;
-            if (words.length > 0) {
-                words.shift(); // Remove the header of the array
-                displayWord(words);
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        function updateProgress(value) {
+            document.getElementById('progress').style.width = `${value}%`;
+        }
+
+        async function loadWords() {
+            try {
+                const response = await fetch(
+                    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`
+                );
+                const data = await response.json();
+                
+                if (data.values && data.values.length > 0) {
+                    const words = data.values.slice(1);
+                    displayWord(words);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                document.getElementById('question').textContent = 'Error loading words';
             }
-        }).catch(error => {
-            console.error('Error fetching data:', error);
-        });
-}
-
-function displayWord(words) {
-    const index = Math.floor(Math.random() * words.length);
-    const [englishWord, firstTranslation, secondTranslation] = words[index];
-
-    questionElement.textContent = `How do you say "${englishWord}" in French?`;
-
-    const correctTranslation = secondTranslation && Math.random() < 0.5 ? secondTranslation : firstTranslation;
-
-    let choices = [correctTranslation];
-
-    while (choices.length < 3) {
-        const wrongIndex = Math.floor(Math.random() * words.length);
-        const wrongAnswer = words[wrongIndex][1];
-        if (!choices.includes(wrongAnswer) && wrongAnswer !== firstTranslation && wrongAnswer !== secondTranslation) {
-            choices.push(wrongAnswer);
         }
-    }
 
-    choices = choices.sort(() => Math.random() - 0.5);
+        function displayWord(words) {
+            const index = Math.floor(Math.random() * words.length);
+            const [english, firstTranslation, secondTranslation] = words[index];
+            currentWord = {
+                english,
+                translations: [firstTranslation, secondTranslation].filter(Boolean)
+            };
 
-    choicesElement.innerHTML = '';
-    choices.forEach(choice => {
-        const button = document.createElement('button');
-        button.textContent = choice;
-        button.classList.add('choice-button');
-        button.onclick = function() { checkAnswer(button, choice, choice === correctTranslation) };
-        choicesElement.appendChild(button);
-    });
-}
+            document.getElementById('question').textContent = `How do you say "${english}" in French?`;
 
-function checkAnswer(button, answer, isCorrect) {
-    const allButtons = document.querySelectorAll('.choice-button');
-    allButtons.forEach(btn => {
-        btn.disabled = true;
-        if (btn.textContent === answer) {
-            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+            const correctTranslation = currentWord.translations[0];
+            let choices = [correctTranslation];
+
+            while (choices.length < 3) {
+                const wrongIndex = Math.floor(Math.random() * words.length);
+                const wrongAnswer = words[wrongIndex][1];
+                if (!choices.includes(wrongAnswer)) {
+                    choices.push(wrongAnswer);
+                }
+            }
+
+            const choicesElement = document.getElementById('choices');
+            choicesElement.innerHTML = '';
+            choices.sort(() => Math.random() - 0.5).forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice;
+                button.className = 'choice-button';
+                button.onclick = () => checkAnswer(button, choice);
+                choicesElement.appendChild(button);
+            });
         }
-    });
-    if (isCorrect) {
-        increaseStreak(); // Augmenter le streak si la réponse est correcte
-    } else {
-        resetStreak(); // Réinitialiser le streak si la réponse est incorrecte
-    }
-    setTimeout(loadWords, 1000); // Reload new word after a short delay
-}
 
-function increaseStreak() {
-    streak++; // Incrémenter le streak
-    streakCountElement.textContent = streak; // Mettre à jour l'affichage
-    streakCountElement.parentElement.style.display = 'inline'; // Afficher l'élément si ce n'est pas déjà fait
-}
+        function checkAnswer(button, answer) {
+            const isCorrect = currentWord.translations.includes(answer);
+            const buttons = document.querySelectorAll('.choice-button');
+            buttons.forEach(btn => btn.disabled = true);
 
-function resetStreak() {
-    streak = 0; // Réinitialiser le streak
-    streakCountElement.textContent = streak; // Mettre à jour l'affichage
-}
+            if (isCorrect) {
+                button.classList.add('correct');
+                streak++;
+                updateProgress(100);
+                showToast('Correct! 🎉', 'success');
+            } else {
+                button.classList.add('incorrect');
+                streak = 0;
+                updateProgress(0);
+                showToast(`Incorrect. The answer was: ${currentWord.translations[0]}`, 'error');
+            }
 
-document.addEventListener('DOMContentLoaded', loadWords);
+            document.getElementById('streak-count').textContent = streak;
 
+            setTimeout(() => {
+                updateProgress(0);
+                loadWords();
+            }, 1500);
+        }
+
+        document.addEventListener('DOMContentLoaded', loadWords);
     </script>
 </body>
 </html>
